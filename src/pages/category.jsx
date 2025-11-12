@@ -10,19 +10,69 @@ import {
   Pagination,
   Row,
   Slider,
+  Spin,
 } from "antd";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import productService from "../services/productService";
 
 function Category() {
-  // Bỏ cmt nếu bạn sử dụng phần này
-  // const { productCategory } = useSelector((state) => state.category);
-
+  const { url } = useParams();
   const [form] = Form.useForm();
 
-  // const [filterList, setFilterList] = useState([]);
+  const [category, setCategory] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [filterData, setFilterData] = useState();
   const [isSubmitDisabled, setSubmitDisabled] = useState(true);
+
+  useEffect(() => {
+    if (url) {
+      fetchCategoryData();
+    }
+  }, [url]);
+
+  useEffect(() => {
+    if (category) {
+      fetchProducts(currentPage);
+    }
+  }, [category, currentPage]);
+
+  const fetchCategoryData = async () => {
+    try {
+      setLoading(true);
+      const data = await productService.getCategoryByUrl(url, "en");
+      setCategory(data);
+    } catch (error) {
+      console.error("Error fetching category:", error);
+    }
+  };
+
+  const fetchProducts = async (page) => {
+    try {
+      setLoading(true);
+      // Lấy tất cả category IDs (bao gồm cả children)
+      const categoryIds = [category.id];
+      if (category.children && category.children.length > 0) {
+        categoryIds.push(...category.children.map(c => c.id));
+      }
+      
+      const data = await productService.getProductByCategory(categoryIds, page, "en");
+      setProducts(data.items);
+      setTotalCount(data.totalCount);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const onValuesChange = (changedValues, allValues) => {
     const hasValue = Object.values(allValues).some((value) => value);
@@ -73,6 +123,14 @@ function Category() {
     setSubmitDisabled(true);
   };
 
+  if (!category) {
+    return (
+      <div style={{ textAlign: "center", padding: "100px" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
     <div id="content" className="content-area">
       <section className="heath-lek section">
@@ -87,7 +145,7 @@ function Category() {
             loop
           >
             <source
-              src="images/website/video_category_product.mp4"
+              src="/images/website/video_category_product.mp4"
               type="video/mp4"
             />
           </video>
@@ -115,22 +173,15 @@ function Category() {
                         ),
                       },
                       {
-                        title: <span className="active-bread">Packaging</span>,
+                        title: <span className="active-bread">{category.categoryName}</span>,
                       },
                     ]}
                     id="breadcrumb"
                   />
 
-                  <h2 className="_5xfq _1kly">Packaging</h2>
+                  <h2 className="_5xfq _1kly">{category.categoryName}</h2>
                   <div className="_7vyg">
-                    <p>
-                      All our products are under absolute supervision, from raw
-                      materials to finished products.
-                    </p>
-                    <p>
-                      We apply an international quality management system to all
-                      of our products.
-                    </p>
+                    <p>{category.description || category.shortDesc}</p>
                   </div>
                 </div>
               </Col>
@@ -174,16 +225,21 @@ function Category() {
                       </Form.Item>
                     </div>
 
-                    <Form.Item
-                      label="Categories"
-                      name="categories"
-                      className="widget_product_categories"
-                    >
-                      <Checkbox.Group className="form-group">
-                        <Checkbox value={1}>Consumer Packaging</Checkbox>
-                        <Checkbox value={2}>Industrial Packaging</Checkbox>
-                      </Checkbox.Group>
-                    </Form.Item>
+                    {category.children && category.children.length > 0 && (
+                      <Form.Item
+                        label="Categories"
+                        name="categories"
+                        className="widget_product_categories"
+                      >
+                        <Checkbox.Group className="form-group">
+                          {category.children.map((child) => (
+                            <Checkbox key={child.id} value={child.id}>
+                              {child.categoryName}
+                            </Checkbox>
+                          ))}
+                        </Checkbox.Group>
+                      </Form.Item>
+                    )}
 
                     <Form.Item
                       label="Type of"
@@ -235,251 +291,61 @@ function Category() {
 
               <Col span={18}>
                 <div className="_7mkr">
-                  <h2 className="_3rac">Consumer Packaging</h2>
+                  <h2 className="_3rac">{category.categoryName}</h2>
                 </div>
-                <div className="products">
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_1.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Food Wrap
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
+                
+                {loading ? (
+                  <div style={{ textAlign: "center", padding: "50px" }}>
+                    <Spin size="large" />
+                  </div>
+                ) : products.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "50px" }}>
+                    <p>Không tìm thấy sản phẩm nào trong danh mục này.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="products">
+                      {products.map((product) => (
+                        <div className="col has-hover product" key={product.id}>
+                          <div className="col-inner">
+                            <div className="box-product has-hover">
+                              <div className="box-image customer-box-image-product">
+                                <Link to={`/product/${product.slug}`} className="_1gqs block image-zoom">
+                                  <img
+                                    src={product.thumb}
+                                    className="_8wjh"
+                                    alt={product.prodName}
+                                  />
+                                </Link>
+                              </div>
+                              <div className="box-text box-text-products text-left">
+                                <div className="title-wrapper">
+                                  <h4 className="product-title">
+                                    <Link to={`/product/${product.slug}`} className="product_link">
+                                      {product.prodName}
+                                    </Link>
+                                  </h4>
+                                  <p className="sku">
+                                    SKU: <span>{product.sku}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_2.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Overlock Jumbo bag
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_1.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Food Wrap
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_2.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Overlock Jumbo bag
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_2.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Overlock Jumbo bag
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_1.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Food Wrap
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_2.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Overlock Jumbo bag
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_1.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Food Wrap
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col has-hover product">
-                    <div className="col-inner">
-                      <div className="box-product has-hover">
-                        <div className="box-image customer-box-image-product">
-                          <a href="#" className="_1gqs block image-zoom">
-                            <img
-                              src="/images/website/product-list_2.png"
-                              className="_8wjh"
-                            />
-                          </a>
-                        </div>
-                        <div className="box-text box-text-products text-left">
-                          <div className="title-wrapper">
-                            <h4 className="product-title">
-                              <a href="#" className="product_link">
-                                Overlock Jumbo bag
-                              </a>
-                            </h4>
-                            <p className="sku">
-                              SKU: <span>036897488221-2</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <Pagination
-                  defaultCurrent={1}
-                  total={27}
-                  defaultPageSize={9}
-                  className="pagination-cntt"
-                />
+                    <Pagination
+                      current={currentPage}
+                      total={totalCount}
+                      pageSize={9}
+                      onChange={handlePageChange}
+                      className="pagination-cntt"
+                      showSizeChanger={false}
+                    />
+                  </>
+                )}
               </Col>
             </Row>
           </div>
