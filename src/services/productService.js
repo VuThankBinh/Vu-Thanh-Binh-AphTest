@@ -2,7 +2,7 @@ import axiosClient from "./interceptor";
 import { mockCategories, mockProducts, mockFilterList } from "./mockData";
 
 // Note: Đây là mock service, sẽ được thay thế bằng API calls thật khi phỏng vấn
-const USE_MOCK_DATA = true; // Đổi thành false khi có API thật
+const USE_MOCK_DATA = false; // Đổi thành false khi có API thật
 
 const productService = {
   // GET /Category/GetListCategory
@@ -17,10 +17,13 @@ const productService = {
       const response = await axiosClient.get("/Category/GetListCategory", {
         params: { lang }
       });
-      return response;
+      // Response từ interceptor đã được xử lý (response.data.result)
+      // Đảm bảo luôn trả về mảng
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error("Error fetching categories:", error);
-      throw error;
+      // Trả về mảng rỗng thay vì throw error để tránh crash
+      return [];
     }
   },
 
@@ -63,7 +66,8 @@ const productService = {
       const response = await axiosClient.get("/Category/GetCategoryByUrl", {
         params: { lang, url }
       });
-      return response;
+      // Đảm bảo trả về object với đầy đủ thuộc tính
+      return response || null;
     } catch (error) {
       console.error("Error fetching category by URL:", error);
       throw error;
@@ -99,10 +103,14 @@ const productService = {
           ids: categoryIds
         }
       });
-      return response;
+      // Đảm bảo trả về object với items và totalCount
+      return {
+        items: Array.isArray(response?.items) ? response.items : (Array.isArray(response) ? response : []),
+        totalCount: response?.totalCount ?? 0
+      };
     } catch (error) {
       console.error("Error fetching products by category:", error);
-      throw error;
+      return { items: [], totalCount: 0 };
     }
   },
 
@@ -123,7 +131,7 @@ const productService = {
       const response = await axiosClient.get("/Product/GetProductByUrl", {
         params: { lang, url }
       });
-      return response;
+      return response || null;
     } catch (error) {
       console.error("Error fetching product by URL:", error);
       throw error;
@@ -151,10 +159,11 @@ const productService = {
       const response = await axiosClient.get("/Product/GetRelatedProducts", {
         params: { lang, id: productId }
       });
-      return response;
+      // Đảm bảo trả về mảng
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error("Error fetching related products:", error);
-      throw error;
+      return [];
     }
   },
 
@@ -197,10 +206,15 @@ const productService = {
       const response = await axiosClient.get("/Product/SearchProducts", {
         params: { lang, query }
       });
-      return response;
+      // Đảm bảo trả về object với products, categories, filters
+      return {
+        products: Array.isArray(response?.products) ? response.products : [],
+        categories: Array.isArray(response?.categories) ? response.categories : [],
+        filters: Array.isArray(response?.filters) ? response.filters : []
+      };
     } catch (error) {
       console.error("Error searching products:", error);
-      throw error;
+      return { products: [], categories: [], filters: [] };
     }
   },
 
@@ -245,10 +259,14 @@ const productService = {
         categories,
         page
       });
-      return response;
+      // Đảm bảo trả về object với items và totalCount
+      return {
+        items: Array.isArray(response?.items) ? response.items : (Array.isArray(response) ? response : []),
+        totalCount: response?.totalCount ?? 0
+      };
     } catch (error) {
       console.error("Error filtering products:", error);
-      throw error;
+      return { items: [], totalCount: 0 };
     }
   }
 };

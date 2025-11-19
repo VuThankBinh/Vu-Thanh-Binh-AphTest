@@ -290,10 +290,16 @@
         border-radius: 22px;
         overflow: hidden;
         position: relative;
+        width: 100%;
+        max-height: 300px; // Giới hạn chiều cao tối đa
 
         ._5mgw {
+          width: 100%;
+          height: auto;
           aspect-ratio: 18/9;
           object-fit: cover;
+          display: block;
+          max-height: 300px; // Giới hạn chiều cao
         }
       }
 
@@ -1189,16 +1195,24 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
+      text-transform: uppercase;
       margin-bottom: 32px;
+      text-underline-offset: none;
 
       .button {
         padding: 12px 28px;
+        border-radius: 100px;
+        padding: 10px 20px;
+        border: 1px solid #118e55;
+        background-color: #118e55;
+        color: #fff;
 
         &.button-outline-green {
           background: transparent;
-          color: #118e55;
+          border-radius: 100px;
+          padding: 10px 20px;
           border: 1px solid #118e55;
-
+          color: #118e55;
           &:hover {
             color: #fff;
             background: var(

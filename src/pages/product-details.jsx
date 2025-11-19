@@ -8,7 +8,7 @@ import { Autoplay, Mousewheel, Pagination, Thumbs } from "swiper/modules";
 import defaultImage from "../assets/images/defaultImage.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import productService from "../services/productService";
-
+import { getImageUrlWithFallback } from "../utils/imageUtils";
 function ProductDetail() {
   const { url } = useParams();
 
@@ -154,20 +154,24 @@ function ProductDetail() {
                   className="ThumbGallery GalleryArea"
                 >
                   {product.media && product.media.length > 0 ? (
-                    product.media.map((img, index) => (
-                      <SwiperSlide key={index}>
-                        <Image
-                          src={img}
-                          alt={`${product.prodName} ${index + 1}`}
-                          fallback={defaultImage}
-                          preview={false}
-                        />
-                      </SwiperSlide>
-                    ))
+                    product.media.map((img, index) => {
+                      // media có thể là object với path hoặc string
+                      const imageUrl = typeof img === "string" ? img : (img?.path || img?.fileName || img);
+                      return (
+                        <SwiperSlide key={index}>
+                          <Image
+                            src={getImageUrlWithFallback(imageUrl)}
+                            alt={img?.altText || `${product.prodName} ${index + 1}`}
+                            fallback={defaultImage}
+                            preview={false}
+                          />
+                        </SwiperSlide>
+                      );
+                    })
                   ) : (
                     <SwiperSlide>
                       <Image
-                        src={product.thumb}
+                        src={getImageUrlWithFallback(product.thumb)}
                         alt={product.prodName}
                         fallback={defaultImage}
                         preview={false}
@@ -182,19 +186,23 @@ function ProductDetail() {
                     className="ProductGallery GalleryArea"
                   >
                     {product.media && product.media.length > 0 ? (
-                      product.media.map((img, index) => (
-                        <SwiperSlide key={index}>
-                          <Image
-                            src={img}
-                            alt={`${product.prodName} ${index + 1}`}
-                            fallback={defaultImage}
-                          />
-                        </SwiperSlide>
-                      ))
+                      product.media.map((img, index) => {
+                        // media có thể là object với path hoặc string
+                        const imageUrl = typeof img === "string" ? img : (img?.path || img?.fileName || img);
+                        return (
+                          <SwiperSlide key={index}>
+                            <Image
+                              src={getImageUrlWithFallback(imageUrl)}
+                              alt={img?.altText || `${product.prodName} ${index + 1}`}
+                              fallback={defaultImage}
+                            />
+                          </SwiperSlide>
+                        );
+                      })
                     ) : (
                       <SwiperSlide>
                         <Image
-                          src={product.thumb}
+                          src={getImageUrlWithFallback(product.thumb)}
                           alt={product.prodName}
                           fallback={defaultImage}
                         />
@@ -210,7 +218,7 @@ function ProductDetail() {
                     style={{ textTransform: "none" }}
                     type="link"
                     className="_7lpb"
-                    href={product.dataSheet}
+                    href={getImageUrlWithFallback(product.dataSheet)}
                     target="_blank"
                   >
                     <span>Download data sheet</span>
@@ -229,16 +237,18 @@ function ProductDetail() {
                   <span>{product.sku}</span>
                 </div>
                 <div className="description">
-                  {product.shortDesc || product.description}
+                  {product.shortDesc }
                 </div>
+                
                 <div className="_6zrw">
-                  <Link to="/contact-us" className="button button-gradient">
+                  <Link style={{textDecoration: "none"}} to="/contact-us" className="button button-gradient">
                     <span>Request Quote</span>
                   </Link>
-                  <a href="#" className="button button-outline-green">
+                  <a style={{textDecoration: "none"}} href="#" className="button button-outline-green">
                     <span>Add to Basket</span>
                   </a>
                 </div>
+                <div dangerouslySetInnerHTML={{ __html: product.description }} />
                 {product.specification && (
                   <div className="contents widget-content">
                     <h4 className="_9cfu">Performance Features:</h4>
@@ -371,7 +381,7 @@ function ProductDetail() {
                         >
                           <div className="media_prj image-zoom">
                             <Image
-                              src={relatedProduct.thumb}
+                              src={getImageUrlWithFallback(relatedProduct.thumb)}
                               alt={relatedProduct.prodName}
                               fallback={defaultImage}
                               preview={false}

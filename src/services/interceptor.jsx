@@ -3,7 +3,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: import.meta.env.VITE_BASE_URL || "http://192.168.199.2:1416/api/services/app",
   timeout: 1800000,
 });
 
@@ -13,7 +13,10 @@ axiosClient.interceptors.request.use(
     const token = getToken();
 
     if (token != null) {
-      config.headers.Authorization = token;
+      // ABP Framework thường dùng Bearer token
+      // Nếu token đã có "Bearer " thì giữ nguyên, nếu không thì thêm
+      const authToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      config.headers.Authorization = authToken;
     }
 
     return config;
@@ -25,6 +28,7 @@ axiosClient.interceptors.request.use(
 
 axiosClient.interceptors.response.use(
   (response) => {
+    // Xử lý response từ ABP Framework
     if (response?.data?.result?.messageSuccess) {
       notification.success({
         message: "Thành công",
@@ -32,7 +36,10 @@ axiosClient.interceptors.response.use(
         placement: "bottomRight",
       });
     }
-    return response.data.result;
+    
+    // ABP Framework trả về { result: [...], success: true, ... }
+    // Trả về result (có thể là mảng, object, hoặc null)
+    return response.data?.result ?? response.data;
   },
   (error) => {
     if (
@@ -79,11 +86,22 @@ axiosClient.interceptors.response.use(
     }
 
     if (!!error.response && error.response.status === 401) {
+      // Token hết hạn hoặc không hợp lệ
       notification.error({
-        message: "Lỗi",
-        description: error.response.data.message,
+        message: "Lỗi xác thực",
+        description: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
         placement: "bottomRight",
       });
+      
+      // Xóa token và redirect về trang login
+      Cookies.remove("Abp.AuthToken");
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Redirect về trang login sau 1 giây
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
     }
 
     if (error && error.response && error.response.data) {

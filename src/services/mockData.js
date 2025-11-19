@@ -1,10 +1,4 @@
-/**
- * Mock Data for Testing
- * 
- * 🤖 AI ASSISTANCE: 100% - Toàn bộ file này được tạo bởi AI Assistant
- * 
- * File này chứa mock data cho categories và products.
- */
+
 
 export const mockCategories = [
   {

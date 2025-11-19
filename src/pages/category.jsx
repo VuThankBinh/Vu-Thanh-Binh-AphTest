@@ -1,4 +1,5 @@
 import { SearchOutlined } from "@ant-design/icons";
+import { getImageUrlWithFallback } from "../utils/imageUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   Breadcrumb,
@@ -312,7 +313,7 @@ function Category() {
                               <div className="box-image customer-box-image-product">
                                 <Link to={`/product/${product.slug}`} className="_1gqs block image-zoom">
                                   <img
-                                    src={product.thumb}
+                                    src={getImageUrlWithFallback(product.thumb)}
                                     className="_8wjh"
                                     alt={product.prodName}
                                   />

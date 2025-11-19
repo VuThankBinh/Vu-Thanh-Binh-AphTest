@@ -3,6 +3,7 @@ import { Breadcrumb, Col, Flex, Input, Row, Spin } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import productService from "../services/productService";
+import { getImageUrlWithFallback } from "../utils/imageUtils";
 
 function AllProduct() {
   const navigate = useNavigate();
@@ -17,9 +18,11 @@ function AllProduct() {
     try {
       setLoading(true);
       const data = await productService.getListCategory("en");
-      setCategories(data);
+      // Đảm bảo data là mảng
+      setCategories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching categories:", error);
+      setCategories([]); // Set mảng rỗng nếu có lỗi
     } finally {
       setLoading(false);
     }
@@ -175,7 +178,14 @@ function AllProduct() {
                 <div className="_3iwp" key={category.id}>
                   <Link to={`/category/${category.link}`} className="_8ahh block has-hover">
                     <div className="_4rfh image-zoom">
-                      <img src={category.thumb} className="_5mgw" alt={category.categoryName} />
+                      <img 
+                        src={getImageUrlWithFallback(category.thumb)} 
+                        className="_5mgw" 
+                        alt={category.categoryName || "Category"} 
+                        onError={(e) => {
+                          e.target.src = "/images/defaultImage.png";
+                        }}
+                      />
                     </div>
                     <div className="_1blc">
                       <div className="_9wvo">{category.categoryName}</div>
@@ -211,7 +221,14 @@ function AllProduct() {
                     <div className="_2jjl">
                       <div className="_8ghs">
                         <Link to={`/category/${child.link}`} className="block">
-                          <img src={child.thumb} className="_9rtu" alt={child.categoryName} />
+                          <img 
+                            src={getImageUrlWithFallback(child.thumb)} 
+                            className="_9rtu" 
+                            alt={child.categoryName || "Category"}
+                            onError={(e) => {
+                              e.target.src = "/images/defaultImage.png";
+                            }}
+                          />
                         </Link>
                       </div>
                       <div className="_0cac">
@@ -220,7 +237,7 @@ function AllProduct() {
                             <Link to={`/category/${child.link}`}>{child.categoryName}</Link>
                           </div>
                           <div className="_8ynm textLine-5">
-                            {child.shortDesc || child.description}
+                            {child.shortDesc || child.description || ""}
                           </div>
                         </div>
                         <div className="_3qdw">
@@ -258,9 +275,12 @@ function AllProduct() {
                     <div className="_8aey">
                       <Link to={`/category/${child.link}`} className="block">
                         <img
-                          src={child.thumb}
+                          src={getImageUrlWithFallback(child.thumb)}
                           className="_1qlp"
-                          alt={child.categoryName}
+                          alt={child.categoryName || "Category"}
+                          onError={(e) => {
+                            e.target.src = "/images/defaultImage.png";
+                          }}
                         />
                       </Link>
                     </div>
@@ -271,7 +291,7 @@ function AllProduct() {
                         </Link>
                       </div>
                       <div className="_8gbl textLine-2">
-                        {child.shortDesc || child.description}
+                        {child.shortDesc || child.description || ""}
                       </div>
                       <Link to={`/category/${child.link}`} className="_4jqn">
                         <FontAwesomeIcon icon="fa-solid fa-arrow-right" />
